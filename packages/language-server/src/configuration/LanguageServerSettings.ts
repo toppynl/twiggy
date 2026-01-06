@@ -44,6 +44,16 @@ export type LanguageServerSettings = {
     diagnostics: DiagnosticsSettings,
 
     /**
+     * Root directory of the PHP/Composer project relative to the workspace.
+     * Used when the Symfony/Craft application is in a subdirectory (e.g., monorepo setups).
+     *
+     * Example: If your composer.json is at `app/composer.json`, set this to `app`.
+     *
+     * When set, template paths and the Symfony console will be resolved relative to this directory.
+     */
+    composerRoot?: string,
+
+    /**
      * Additional template path mappings to register manually.
      * Useful for bundle development or non-standard project structures.
      */

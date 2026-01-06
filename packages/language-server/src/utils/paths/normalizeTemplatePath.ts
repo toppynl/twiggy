@@ -71,42 +71,6 @@ export function normalizeDirectoryPath(
 }
 
 /**
- * Extracts the framework root directory from the console path.
- *
- * Examples:
- * - "bin/console" → undefined (framework is at workspace root)
- * - "./bin/console" → undefined
- * - "app/bin/console" → "app"
- * - "backend/bin/console" → "backend"
- *
- * @param consolePath The Symfony console path (e.g., "app/bin/console")
- * @returns The framework root directory or undefined if at workspace root
- */
-export function extractFrameworkRoot(consolePath: string): string | undefined {
-    if (!consolePath) {
-        return undefined;
-    }
-
-    // Normalize path separators and remove leading ./
-    let normalized = consolePath.replace(/\\/g, '/');
-    if (normalized.startsWith('./')) {
-        normalized = normalized.slice(2);
-    }
-
-    // Split and check if there's a directory before bin/console
-    const parts = normalized.split('/');
-
-    // Standard Symfony structure: bin/console is at the end
-    const binIndex = parts.indexOf('bin');
-    if (binIndex > 0) {
-        // Everything before 'bin' is the framework root
-        return parts.slice(0, binIndex).join('/');
-    }
-
-    return undefined;
-}
-
-/**
  * Resolves a Twig template path to an absolute filesystem path.
  *
  * @param twigPath The Twig template path (e.g., "partials/header.twig" or "@Bundle/template.twig")

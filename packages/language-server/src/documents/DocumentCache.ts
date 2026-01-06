@@ -14,7 +14,7 @@ import { normalizeDirectoryPath } from '../utils/paths/normalizeTemplatePath';
 export class DocumentCache {
     #environment: IFrameworkTwigEnvironment = EmptyEnvironment;
     #typeResolver: ITypeResolver | null = null;
-    #frameworkRoot: string | undefined;
+    #composerRoot: string | undefined;
     #additionalMappings: TemplatePathMapping[] = [];
     #normalizedMappingsCache: TemplatePathMapping[] | null = null;
 
@@ -28,12 +28,12 @@ export class DocumentCache {
     configure(
         frameworkEnvironment: IFrameworkTwigEnvironment,
         typeResolver: ITypeResolver | null,
-        frameworkRoot?: string,
+        composerRoot?: string,
         additionalMappings?: TemplatePathMapping[],
     ) {
         this.#environment = frameworkEnvironment;
         this.#typeResolver = typeResolver;
-        this.#frameworkRoot = frameworkRoot;
+        this.#composerRoot = composerRoot;
         this.#additionalMappings = additionalMappings || [];
         this.#normalizedMappingsCache = null; // Clear cache when configuration changes
     }
@@ -56,7 +56,7 @@ export class DocumentCache {
             directory: normalizeDirectoryPath(
                 directory,
                 this.workspaceFolderPath,
-                this.#frameworkRoot,
+                this.#composerRoot,
             ),
         }));
 
@@ -114,9 +114,9 @@ export class DocumentCache {
 
             let resolvedTemplate = await resolveTemplate(pathToTwig);
 
-            // If not found and we have a framework root, try resolving relative to it
-            if (!resolvedTemplate && this.#frameworkRoot) {
-                pathToTwig = path.resolve(this.workspaceFolderPath, this.#frameworkRoot, includePath);
+            // If not found and we have a composer root, try resolving relative to it
+            if (!resolvedTemplate && this.#composerRoot) {
+                pathToTwig = path.resolve(this.workspaceFolderPath, this.#composerRoot, includePath);
                 documentUri = toDocumentUri(pathToTwig);
 
                 if (this.documents.has(documentUri)) {

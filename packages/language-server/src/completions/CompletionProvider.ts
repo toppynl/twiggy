@@ -26,7 +26,7 @@ export class CompletionProvider {
     workspaceFolderPath: string;
     #phpExecutor: IPhpExecutor | null = null;
     #expressionTypeResolver: IExpressionTypeResolver | null = null;
-    #frameworkRoot: string | undefined;
+    #composerRoot: string | undefined;
     #additionalMappings: TemplatePathMapping[] = [];
     #normalizedMappingsCache: TemplatePathMapping[] | null = null;
 
@@ -44,14 +44,14 @@ export class CompletionProvider {
         environment: IFrameworkTwigEnvironment,
         phpExecutor: IPhpExecutor | null,
         typeResolver: ITypeResolver | null,
-        frameworkRoot?: string,
+        composerRoot?: string,
         additionalMappings?: TemplatePathMapping[],
     ) {
         this.#environment = environment;
         this.#symfonyRouteNames = Object.keys(environment.routes);
         this.#phpExecutor = phpExecutor;
         this.#expressionTypeResolver = typeResolver ? new ExpressionTypeResolver(typeResolver) : null;
-        this.#frameworkRoot = frameworkRoot;
+        this.#composerRoot = composerRoot;
         this.#additionalMappings = additionalMappings || [];
         this.#normalizedMappingsCache = null;
     }
@@ -72,7 +72,7 @@ export class CompletionProvider {
             directory: normalizeDirectoryPath(
                 directory,
                 this.workspaceFolderPath,
-                this.#frameworkRoot,
+                this.#composerRoot,
             ),
         }));
 

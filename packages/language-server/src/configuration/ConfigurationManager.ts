@@ -27,7 +27,7 @@ import { DiagnosticProvider } from 'diagnostics';
 import { FormattingProvider } from 'formatting/FormattingProvider';
 import { TwigCodeStyleFixer } from 'phpInterop/TwigCodeStyleFixer';
 import { TemplatePathMapping, TemplateNamespace } from '../twigEnvironment/types';
-import { extractFrameworkRoot } from '../utils/paths/normalizeTemplatePath';
+import * as path from 'path';
 
 export class ConfigurationManager {
     readonly configurationSection = 'twiggy';
@@ -87,10 +87,10 @@ export class ConfigurationManager {
             console.info('Guessed `twiggy.framework`: ', config.framework);
         }
 
-        // Extract framework root from console path (e.g., "app/bin/console" → "app")
-        const frameworkRoot = extractFrameworkRoot(config.symfonyConsolePath);
-        if (frameworkRoot) {
-            console.info('Detected framework root:', frameworkRoot);
+        // Use composerRoot directly if configured
+        const composerRoot = config.composerRoot?.trim() || undefined;
+        if (composerRoot) {
+            console.info('Using composer root:', composerRoot);
         }
 
         const phpExecutor = new PhpExecutor(config.phpExecutable, workspaceDirectory);
@@ -98,9 +98,14 @@ export class ConfigurationManager {
             ? new TwigCodeStyleFixer(phpExecutor, workspaceDirectory)
             : null;
 
+        // Resolve console path relative to composerRoot if set
+        const effectiveConsolePath = composerRoot
+            ? path.join(composerRoot, config.symfonyConsolePath)
+            : config.symfonyConsolePath;
+
         const twigEnvironment = this.#resolveTwigEnvironment(config.framework, phpExecutor);
         await twigEnvironment.refresh({
-            symfonyConsolePath: config.symfonyConsolePath,
+            symfonyConsolePath: effectiveConsolePath,
             vanillaTwigEnvironmentPath: config.vanillaTwigEnvironmentPath,
             workspaceDirectory,
         });
@@ -112,7 +117,7 @@ export class ConfigurationManager {
             console.debug(twigEnvironment.environment)
         }
 
-        this.applySettings(twigEnvironment, phpExecutor, twigCodeStyleFixer, frameworkRoot, additionalMappings);
+        this.applySettings(twigEnvironment, phpExecutor, twigCodeStyleFixer, composerRoot, additionalMappings);
     }
 
     #resolveTwigEnvironment(framework: PhpFramework, phpExecutor: PhpExecutor) {
@@ -145,15 +150,15 @@ export class ConfigurationManager {
         frameworkEnvironment: IFrameworkTwigEnvironment,
         phpExecutor: PhpExecutor | null,
         twigCodeStyleFixer: TwigCodeStyleFixer | null,
-        frameworkRoot?: string,
+        composerRoot?: string,
         additionalMappings?: TemplatePathMapping[],
     ) {
         const typeResolver = phpExecutor ? new TypeResolver(phpExecutor) : null;
 
         this.definitionProvider.phpExecutor = phpExecutor;
-        this.completionProvider.refresh(frameworkEnvironment, phpExecutor, typeResolver, frameworkRoot, additionalMappings);
+        this.completionProvider.refresh(frameworkEnvironment, phpExecutor, typeResolver, composerRoot, additionalMappings);
         this.signatureHelpProvider.reindex(frameworkEnvironment);
-        this.documentCache.configure(frameworkEnvironment, typeResolver, frameworkRoot, additionalMappings);
+        this.documentCache.configure(frameworkEnvironment, typeResolver, composerRoot, additionalMappings);
 
         this.diagnosticProvider.refresh(twigCodeStyleFixer);
         this.formattingProvider.refresh(twigCodeStyleFixer);

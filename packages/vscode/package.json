@@ -87,7 +87,13 @@
           "type": "string",
           "scope": "resource",
           "default": "bin/console",
-          "markdownDescription": "Path to the Symfony console. See: https://symfony.com/doc/current/templates.html#inspecting-twig-information\n\nNote: If your Symfony application is in a subdirectory (e.g., `app/bin/console`), templates will be resolved relative to that subdirectory."
+          "markdownDescription": "Path to the Symfony console, relative to `composerRoot` (or workspace root if not set).\n\nSee: https://symfony.com/doc/current/templates.html#inspecting-twig-information"
+        },
+        "twiggy.composerRoot": {
+          "type": "string",
+          "scope": "resource",
+          "default": "",
+          "markdownDescription": "Root directory of the PHP/Composer project relative to the workspace.\n\nUse this when your Symfony/Craft application is in a subdirectory (e.g., monorepo setups).\n\n**Example:** If your `composer.json` is at `app/composer.json`, set this to `app`.\n\nWhen set, template paths and the Symfony console will be resolved relative to this directory."
         },
         "twiggy.templatePaths": {
           "type": "array",
