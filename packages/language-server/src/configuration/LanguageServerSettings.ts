@@ -17,6 +17,22 @@ type DiagnosticsSettings = {
     twigCsFixer: boolean,
 };
 
+/**
+ * Manual template path mapping configuration.
+ * Allows users to register additional namespace → directory mappings.
+ */
+export type TemplatePathConfig = {
+    /**
+     * The namespace prefix (e.g., "@MyBundle" or "" for root namespace).
+     * Use "" for templates without a namespace prefix.
+     */
+    namespace: string,
+    /**
+     * The directory path relative to the workspace folder.
+     */
+    path: string,
+};
+
 export type LanguageServerSettings = {
     autoInsertSpaces: boolean,
     inlayHints: InlayHintSettings,
@@ -26,4 +42,10 @@ export type LanguageServerSettings = {
     symfonyConsolePath: string,
     vanillaTwigEnvironmentPath: string,
     diagnostics: DiagnosticsSettings,
+
+    /**
+     * Additional template path mappings to register manually.
+     * Useful for bundle development or non-standard project structures.
+     */
+    templatePaths?: TemplatePathConfig[],
 };
