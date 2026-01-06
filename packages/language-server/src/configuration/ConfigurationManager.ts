@@ -4,7 +4,7 @@ import {
     DidChangeConfigurationParams,
     WorkspaceFolder,
 } from 'vscode-languageserver';
-import { LanguageServerSettings, PhpFramework, PhpFrameworkOption } from './LanguageServerSettings';
+import { LanguageServerSettings, PhpFramework, PhpFrameworkOption, TemplatePathConfig } from './LanguageServerSettings';
 import { InlayHintProvider } from '../inlayHints/InlayHintProvider';
 import { DocumentCache } from '../documents';
 import { BracketSpacesInsertionProvider } from '../autoInsertions/BracketSpacesInsertionProvider';
@@ -26,6 +26,8 @@ import { readFile } from 'fs/promises';
 import { DiagnosticProvider } from 'diagnostics';
 import { FormattingProvider } from 'formatting/FormattingProvider';
 import { TwigCodeStyleFixer } from 'phpInterop/TwigCodeStyleFixer';
+import { TemplatePathMapping, TemplateNamespace } from '../twigEnvironment/types';
+import { extractFrameworkRoot } from '../utils/paths/normalizeTemplatePath';
 
 export class ConfigurationManager {
     readonly configurationSection = 'twiggy';
@@ -64,7 +66,10 @@ export class ConfigurationManager {
         this.inlayHintProvider.settings = config.inlayHints ?? InlayHintProvider.defaultSettings;
         this.bracketSpacesInsertionProvider.isEnabled = config.autoInsertSpaces ?? true;
 
-        this.applySettings(EmptyEnvironment, null, null);
+        // Convert user-configured template paths
+        const additionalMappings = this.#convertTemplatePathConfig(config.templatePaths);
+
+        this.applySettings(EmptyEnvironment, null, null, undefined, additionalMappings);
 
         if (config.framework === PhpFrameworkOption.Ignore) {
             return;
@@ -80,6 +85,12 @@ export class ConfigurationManager {
             }
 
             console.info('Guessed `twiggy.framework`: ', config.framework);
+        }
+
+        // Extract framework root from console path (e.g., "app/bin/console" → "app")
+        const frameworkRoot = extractFrameworkRoot(config.symfonyConsolePath);
+        if (frameworkRoot) {
+            console.info('Detected framework root:', frameworkRoot);
         }
 
         const phpExecutor = new PhpExecutor(config.phpExecutable, workspaceDirectory);
@@ -101,7 +112,7 @@ export class ConfigurationManager {
             console.debug(twigEnvironment.environment)
         }
 
-        this.applySettings(twigEnvironment, phpExecutor, twigCodeStyleFixer);
+        this.applySettings(twigEnvironment, phpExecutor, twigCodeStyleFixer, frameworkRoot, additionalMappings);
     }
 
     #resolveTwigEnvironment(framework: PhpFramework, phpExecutor: PhpExecutor) {
@@ -134,15 +145,31 @@ export class ConfigurationManager {
         frameworkEnvironment: IFrameworkTwigEnvironment,
         phpExecutor: PhpExecutor | null,
         twigCodeStyleFixer: TwigCodeStyleFixer | null,
+        frameworkRoot?: string,
+        additionalMappings?: TemplatePathMapping[],
     ) {
         const typeResolver = phpExecutor ? new TypeResolver(phpExecutor) : null;
 
         this.definitionProvider.phpExecutor = phpExecutor;
-        this.completionProvider.refresh(frameworkEnvironment, phpExecutor, typeResolver);
+        this.completionProvider.refresh(frameworkEnvironment, phpExecutor, typeResolver, frameworkRoot, additionalMappings);
         this.signatureHelpProvider.reindex(frameworkEnvironment);
-        this.documentCache.configure(frameworkEnvironment, typeResolver);
+        this.documentCache.configure(frameworkEnvironment, typeResolver, frameworkRoot, additionalMappings);
 
         this.diagnosticProvider.refresh(twigCodeStyleFixer);
         this.formattingProvider.refresh(twigCodeStyleFixer);
+    }
+
+    /**
+     * Converts user-configured template paths to internal TemplatePathMapping format.
+     */
+    #convertTemplatePathConfig(configs?: TemplatePathConfig[]): TemplatePathMapping[] {
+        if (!configs || configs.length === 0) {
+            return [];
+        }
+
+        return configs.map(({ namespace, path }) => ({
+            namespace: (namespace.startsWith('@') || namespace === '' ? namespace : `@${namespace}`) as TemplateNamespace,
+            directory: path,
+        }));
     }
 }
